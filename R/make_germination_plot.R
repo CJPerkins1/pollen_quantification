@@ -31,14 +31,19 @@ process_data_make_plot = function(name){
     # make it do the classes right if there's not always all of them
 
     # FIX COLORS
-    color_vec <- c("#DC267F", "#5fc77b", "#2F69FF", "#FFB000") # Burst, germinated, ungerminated, unknown_germinated
+    color_vec <- c("#DC267F", "#5fc77b", "#2F69FF", "#FFB000", "black") # Burst, germinated, ungerminated, unknown_germinated
     
+    # Trying with a named vector
+    names(color_vec) <- c("burst", "germinated", "ungerminated", "unknown_germinated", "aborted")
     
     ggplot(input_df, aes(x = timepoint, y = percentage, color = class)) +
-      geom_line(size = 2) +
+      # geom_line(size = 2) +
+      geom_smooth(span = 0.4, se = FALSE, size = 2) +
       geom_point(size = 2) +
       scale_color_manual(values = color_vec) +
-      #scale_y_continuous(expand = expansion(mult = c(0, .05))) +
+      scale_y_continuous(breaks = c(0, 0.25, .5, .75, 1), 
+                         labels = c("0%", "25%", "50%", "75%", "100%"),
+                         limits = c(0, 1)) +
       labs(title = image_name,
            y = "Percentage") +
       theme_bw() +
