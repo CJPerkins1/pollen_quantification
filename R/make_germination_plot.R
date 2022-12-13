@@ -4,8 +4,8 @@
 # frame that show how the percentage of pollen grain categories changes over
 # time.
 
-library(dplyr)
-library(ggplot2)
+library(dplyr) # Pandas
+library(ggplot2) # Matplotlib / Seaborn
 
 process_data_make_plot = function(name){
   df <- read.table(file = file.path(getwd(), "data", paste0(name, "_stab_predictions.tsv")),
