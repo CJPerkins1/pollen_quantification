@@ -68,6 +68,7 @@ get_r_squared <- function(ground_truth, inference) {
     return(df)
   }
   ground_truth <- process_ground_truth(ground_truth)
+  #print(ground_truth)
   
   # Sub function that calculates the R-squared for a single threshold and a single class
   get_single_r_squared <- function(ground_truth, inference, threshold, class_string, image_string) {
@@ -96,6 +97,7 @@ get_r_squared <- function(ground_truth, inference) {
     }
     
     inference <- process_inference(inference, threshold)
+    #print(inference)
     
     # Combine the two data frames
     df <- full_join(ground_truth, inference, by = c("name", "class"))
@@ -135,14 +137,14 @@ get_r_squared <- function(ground_truth, inference) {
   # Going through each class and calculating the r-squared values at intervals of 0.01
   output_df <- data.frame()
   
-  for (image_name in unique(df$name)) {
-    for (class_string in unique(df$class)) {
+  for (image_name in unique(ground_truth$name)) {
+    for (class_string in unique(ground_truth$class)) {
       print(image_name)
       print(class_string)
       df_list <- list()
       i = 1
       for (x in seq(0.01, 1, by=0.01)) {
-        print(x)
+        #print(x)
         output <- get_single_r_squared(ground_truth, inference, x, class_string, image_name)
         df_list[[i]] <- output
         i = i + 1
