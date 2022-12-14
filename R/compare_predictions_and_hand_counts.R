@@ -1,4 +1,4 @@
-# Introduction ------------------------------------------------------------
+#hand_count Introduction ------------------------------------------------------------
 # I'll use this script to compare predictions from the model and hand counts.
 # I'll also look at how the percent confidence cutoff affects accuracy. 
 
@@ -104,12 +104,61 @@ get_r_squared <- function(ground_truth, inference) {
   return(output_df)
 }
 
-df <- get_r_squared(ground_truth, inference)
+resnet_2022_12_12 <- get_r_squared(ground_truth, inference)
+resnet_2022_12_12 <- resnet_2022_12_12 %>%
+  filter(class != "tube_tip" &
+         class != "tube_tip_bulging" &
+         class != "tube_tip_burst")
+
+
+# Plotting r-squared values -----------------------------------------------
+plot_r_squared <- function(df, model_name) {
+  color_vec <- c("#DC267F", "#5fc77b", "#2F69FF", "#FFB000", "black") # Burst, germinated, ungerminated, unknown_germinated
+  names(color_vec) <- c("burst", "germinated", "ungerminated", "unknown_germinated", "aborted")
+  
+  ggplot(resnet_2022_12_12, aes(x = threshold, y = r_squared, color = class)) +
+    geom_point(size = 2) +
+    scale_x_continuous(breaks = seq(0, 1, 0.1), labels = seq(0, 1, 0.1), limits = c(0, 1)) +
+    scale_color_manual(values = color_vec) +
+    theme_bw() +
+    labs(title = model_name, x = "Confidence threshold", y = "R-squared") +
+    theme(axis.title = element_text(size = 26, face = 'bold'),
+          axis.text = element_text(size = 22, face = 'bold', color = 'black'),
+          axis.text.x = element_text(size = 26, face = 'bold', color = 'black'),
+          plot.title = element_text(size = 28, face = 'bold', margin = margin(0, 0, 10, 0)),
+          axis.title.x = element_blank(),
+          panel.border = element_blank(),
+          axis.line = element_line(size = 1, color = 'black'),
+          axis.ticks = element_line(size = 1, color = 'black'),
+          axis.ticks.length = unit(8, 'pt'),
+          plot.margin = margin(0.5, 0.5, 0.5, 0.5, 'cm'),
+          panel.grid = element_blank(),
+          # legend.position = 'none',
+          strip.background = element_blank(),
+          strip.placement = "outside")
+  
+  ggsave(filename = file.path(getwd(), "plots", "r_squared", paste0(gsub(" ", "_", model_name), "_r_squared.png")),
+         device = 'png',
+         width = 12,
+         height = 8,
+         dpi = 400,
+         units = 'in')
+}
+
+plot_r_squared(resnet_2022_12_12, "Faster RCNN Resnet 2022-12-12")
+
+
+
+
+
+
+
+
 
 
 # Plotting ----------------------------------------------------------------
 
-# Test plot
+# Everything together
 ggplot(df[df$class == "burst", ], aes(x = hand_count, y = model_count, color = class)) +
   # geom_line(size = 2) +
   geom_smooth(method = "lm", se = FALSE, size = 2) +
