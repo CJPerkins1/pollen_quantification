@@ -198,56 +198,140 @@ plot_r_squared <- function(df, model_name) {
 
 plot_r_squared(rsq_resnet_2022_12_12, "Faster RCNN Resnet 2022-12-12")
 plot_r_squared(rsq_centernet_2022_12_14, "CenterNet HourGlass only pollen 2022-12-14")
-#plot_r_squared(centernet_2022_12_15, "Faster RCNN Resnet 2022-12-12")
+#plot_r_squared(centernet_2022_12_15, "CenterNet HourGlass all classes 2022-12-15")
+
+
+# Plotting linear models --------------------------------------------------
+# I want these plots to have the r-squared values on the plots. Probably 
+# faceted.
+make_and_plot_lm <- function(ground_truth, inference, confidence_threshold, model_name) {
+  # Processing the ground truth
+  process_ground_truth <- function(df){
+    df <- df %>%
+      complete(name, class) %>%
+      mutate(hand_count = replace_na(size, 0)) %>%
+      select(-size)
+    return(df)
+  }
+  ground_truth <- process_ground_truth(ground_truth)
+  
+  # Processing the inference
+  process_inference <- function(df, confidence_threshold){
+    df <- df %>%
+      mutate(name = paste0(
+        date,
+        "_run",
+        run,
+        "_",
+        tempc,
+        "C_",
+        well,
+        "_t",
+        str_pad(timepoint, 3, pad = "0")
+      )) %>%
+      filter(score >= confidence_threshold) %>%
+      group_by(name, class) %>%
+      summarize(model_count = n(), .groups = "drop") %>%
+      complete(name, class) %>%
+      mutate(model_count = replace_na(model_count, 0)) 
+    
+    return(df)
+  }
+  
+  inference <- process_inference(inference, confidence_threshold)
+  
+  # Combining the two data frames
+  df <- full_join(ground_truth, inference, by = c("name", "class"))
+  
+  df <- df %>%
+    ungroup() %>%
+    complete(name, class) %>%
+    mutate(model_count = replace_na(model_count, 0)) %>%
+    filter(model_count != 0)
+  
+  # Plotting
+  color_vec <- c("#DC267F", # burst
+                 "#5fc77b", # germinated
+                 "#2F69FF", # ungerminated
+                 "#FFB000", # unknown_germinated
+                 "black",   # aborted
+                 "#ffa6db", # tube_tip_burst
+                 "#fffa70", # tube_tip_bulging
+                 "#a8ffe1") #tube_tip
+  names(color_vec) <- c("burst", 
+                        "germinated", 
+                        "ungerminated", 
+                        "unknown_germinated", 
+                        "aborted", 
+                        "tube_tip_burst",
+                        "tube_tip_bulging",
+                        "tube_tip")
+  
+  ggplot(df, aes(x = hand_count, y = model_count, color = class)) +
+    geom_point(size = 2) +
+    geom_smooth(method = "lm", se = FALSE, size = 2) +
+    # scale_x_continuous(breaks = seq(0, 1, 0.1), labels = seq(0, 1, 0.1), limits = c(0, 1)) +
+    coord_fixed(ratio = 1) +
+    scale_color_manual(values = color_vec,
+                       name = "Class",
+                       breaks = c("germinated", 
+                                  "ungerminated", 
+                                  "burst", 
+                                  "aborted", 
+                                  "unknown_germinated", 
+                                  "tube_tip", 
+                                  "tube_tip_burst", 
+                                  "tube_tip_bulging"),
+                       labels = c("Germinated", 
+                                  "Ungerminated", 
+                                  "Burst", 
+                                  "Aborted", 
+                                  "Unknown germinated", 
+                                  "Tube tip", 
+                                  "Tube tip burst", 
+                                  "Tube tip bulging"),
+                       limits = force) +
+    facet_wrap(~class) +
+    theme_bw() +
+    labs(title = model_name, x = "Hand counts", y = "Model predictions") +
+    theme(axis.title = element_text(size = 26, face = 'bold'),
+          axis.text = element_text(size = 22, face = 'bold', color = 'black'),
+          axis.text.x = element_text(size = 26, face = 'bold', color = 'black'),
+          plot.title = element_text(size = 28, face = 'bold', margin = margin(0, 0, 10, 0)),
+          panel.border = element_blank(),
+          axis.line = element_line(size = 1, color = 'black'),
+          axis.ticks = element_line(size = 1, color = 'black'),
+          axis.ticks.length = unit(8, 'pt'),
+          plot.margin = margin(0.5, 0.5, 0.5, 0.5, 'cm'),
+          panel.grid = element_blank(),
+          strip.background = element_blank(),
+          strip.placement = "outside",
+          legend.title = element_text(size = 18, face = 'bold', color = 'black'),
+          legend.text = element_text(size = 14, face = 'bold', color = 'black'))
+  
+  ggsave(filename = file.path(getwd(), "plots", "linear_model", paste0(gsub(" ", "_", model_name), "_linear_model.png")),
+         device = 'png',
+         width = 12,
+         height = 8,
+         dpi = 400,
+         units = 'in')
+}
+
+make_and_plot_lm(ground_truth_2022_12_12, resnet_2022_12_12, 0.05, "Faster RCNN Resnet 2022-12-12")
+make_and_plot_lm(ground_truth_2022_12_12, centernet_2022_12_14, 0.3, "CenterNet HourGlass only pollen 2022-12-14")
+#plot_r_squared(centernet_2022_12_15, "CenterNet HourGlass all classes 2022-12-15")
 
 
 
 
 
-
-
-
-
-
-# Plotting ----------------------------------------------------------------
-
-# Everything together
-ggplot(df[df$class == "burst", ], aes(x = hand_count, y = model_count, color = class)) +
-  # geom_line(size = 2) +
-  geom_smooth(method = "lm", se = FALSE, size = 2) +
-  geom_point(size = 2) +
-  # scale_color_manual(values = color_vec) +
-  # scale_y_continuous(breaks = c(0, 0.25, .5, .75, 1), 
-                     # labels = c("0%", "25%", "50%", "75%", "100%"),
-                     # limits = c(0, 1)) +
-  # scale_y_continuous(limits = c(0, 50)) +
-  # scale_x_continuous(limits = c(0, 50)) +
-  # coord_fixed(ratio = 1, xlim = c(0, 50), ylim = c(0, 50)) +
-  coord_fixed(ratio = 1) +
-  # labs(title = image_name,
-       # y = "Percentage") +
-  theme_bw() +
-  theme(axis.title = element_text(size = 26, face = 'bold'),
-        axis.text = element_text(size = 22, face = 'bold', color = 'black'),
-        axis.text.x = element_text(size = 26, face = 'bold', color = 'black'),
-        plot.title = element_text(size = 28, face = 'bold', margin = margin(0, 0, 10, 0)),
-        axis.title.x = element_blank(),
-        panel.border = element_blank(),
-        axis.line = element_line(size = 1, color = 'black'),
-        axis.ticks = element_line(size = 1, color = 'black'),
-        axis.ticks.length = unit(8, 'pt'),
-        plot.margin = margin(0.5, 0.5, 0.5, 0.5, 'cm'),
-        panel.grid = element_blank(),
-        # legend.position = 'none',
-        strip.background = element_blank(),
-        strip.placement = "outside")
 
 # Stats -------------------------------------------------------------------
 
-summary(lm(hand_count ~ model_count, data = df[df$class == "germinated", ]))$adj.r.squared
-summary(lm(hand_count ~ model_count, data = df[df$class == "ungerminated", ]))$adj.r.squared
-summary(lm(hand_count ~ model_count, data = df[df$class == "burst", ]))$adj.r.squared
-summary(lm(hand_count ~ model_count, data = df[df$class == "aborted", ]))$adj.r.squared
+# summary(lm(hand_count ~ model_count, data = df[df$class == "germinated", ]))$adj.r.squared
+# summary(lm(hand_count ~ model_count, data = df[df$class == "ungerminated", ]))$adj.r.squared
+# summary(lm(hand_count ~ model_count, data = df[df$class == "burst", ]))$adj.r.squared
+# summary(lm(hand_count ~ model_count, data = df[df$class == "aborted", ]))$adj.r.squared
 
 
 # > summary(lm(hand_count ~ model_count, data = df[df$class == "germinated", ]))$adj.r.squared
