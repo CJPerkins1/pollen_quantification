@@ -30,9 +30,9 @@ centernet_2022_12_14 <- read.table(file = file.path(getwd(), "data", "validation
                                 sep = '\t',
                                 header = TRUE)
 
-# centernet_2022_12_15 <- read.table(file = file.path(getwd(), "data", "2022-12-15_centernet_val_predictions.tsv"),
-#                                 sep = '\t',
-#                                 header = TRUE)
+centernet_2022_12_15 <- read.table(file = file.path(getwd(), "data", "validation_inference", "2022-12-15_centernet_val_predictions.tsv"),
+                                   sep = '\t',
+                                   header = TRUE)
 
 
 # Getting r-squared values ------------------------------------------------
@@ -121,14 +121,22 @@ get_r_squared <- function(ground_truth, inference) {
   output_df <- output_df %>%
     filter(r_squared != 0)
   
+  # Print the max R-squared values for each class
+  print("Max R-squared values:")
+  for (class_string in unique(output_df$class)) {
+    print_df <- output_df %>%
+      filter(class == class_string)
+    r_squared_val = as.character(max(print_df$r_squared))
+    threshold_at_max_r_squared = as.character(print_df$threshold[which.max(print_df$r_squared)])
+    print(paste0(class_string, ": ", r_squared_val, " at threshold ", threshold_at_max_r_squared))
+  }
+  
   return(output_df)
 }
 
 rsq_resnet_2022_12_12 <- get_r_squared(ground_truth_2022_12_12, resnet_2022_12_12)
 rsq_centernet_2022_12_14 <- get_r_squared(ground_truth_2022_12_12, centernet_2022_12_14)
-
-
-# rsq_centernet_2022_12_15 <- get_r_squared(ground_truth_2022_12_15, centernet_2022_12_15)
+rsq_centernet_2022_12_15 <- get_r_squared(ground_truth_2022_12_15, centernet_2022_12_15)
 
 
 # Plotting r-squared values -----------------------------------------------
@@ -199,7 +207,7 @@ plot_r_squared <- function(df, model_name) {
 
 plot_r_squared(rsq_resnet_2022_12_12, "Faster RCNN Resnet 2022-12-12")
 plot_r_squared(rsq_centernet_2022_12_14, "CenterNet HourGlass only pollen 2022-12-14")
-#plot_r_squared(centernet_2022_12_15, "CenterNet HourGlass all classes 2022-12-15")
+plot_r_squared(rsq_centernet_2022_12_15, "CenterNet HourGlass all classes 2022-12-15")
 
 
 # Plotting linear models --------------------------------------------------
@@ -296,9 +304,9 @@ make_and_plot_lm <- function(ground_truth, inference, confidence_threshold, mode
     coord_fixed() +
     theme_bw() +
     labs(title = model_name, x = "Hand counts", y = "Model predictions") +
-    theme(axis.title = element_text(size = 26, face = 'bold'),
-          axis.text = element_text(size = 16, face = 'bold', color = 'black'),
-          plot.title = element_text(size = 28, face = 'bold', margin = margin(0, 0, 10, 0)),
+    theme(axis.title = element_text(size = 20, face = 'bold'),
+          axis.text = element_text(size = 14, face = 'bold', color = 'black'),
+          plot.title = element_text(size = 22, face = 'bold', margin = margin(0, 0, 10, 0)),
           panel.border = element_blank(),
           axis.line = element_line(size = 1, color = 'black'),
           axis.ticks = element_line(size = 1, color = 'black'),
@@ -307,7 +315,7 @@ make_and_plot_lm <- function(ground_truth, inference, confidence_threshold, mode
           panel.grid = element_blank(),
           strip.background = element_blank(),
           strip.placement = "outside",
-          strip.text = element_text(size = 18, face = 'bold', color = 'black'),
+          strip.text = element_text(size = 12, face = 'bold', color = 'black'),
           legend.position = "none")
   
   ggsave(filename = file.path(getwd(), "plots", "linear_model", paste0(gsub(" ", "_", model_name), "_linear_model.png")),
@@ -316,30 +324,10 @@ make_and_plot_lm <- function(ground_truth, inference, confidence_threshold, mode
          height = 8,
          dpi = 400,
          units = 'in')
+  
+
 }
 
 make_and_plot_lm(ground_truth_2022_12_12, resnet_2022_12_12, 0.05, "Faster RCNN Resnet 2022-12-12")
 make_and_plot_lm(ground_truth_2022_12_12, centernet_2022_12_14, 0.3, "CenterNet HourGlass only pollen 2022-12-14")
-#plot_r_squared(centernet_2022_12_15, "CenterNet HourGlass all classes 2022-12-15")
-
-
-
-
-
-
-# Stats -------------------------------------------------------------------
-
-# summary(lm(hand_count ~ model_count, data = df[df$class == "germinated", ]))$adj.r.squared
-# summary(lm(hand_count ~ model_count, data = df[df$class == "ungerminated", ]))$adj.r.squared
-# summary(lm(hand_count ~ model_count, data = df[df$class == "burst", ]))$adj.r.squared
-# summary(lm(hand_count ~ model_count, data = df[df$class == "aborted", ]))$adj.r.squared
-
-
-# > summary(lm(hand_count ~ model_count, data = df[df$class == "germinated", ]))$adj.r.squared
-# [1] 0.8114968
-# > summary(lm(hand_count ~ model_count, data = df[df$class == "ungerminated", ]))$adj.r.squared
-# [1] 0.9593114
-# > summary(lm(hand_count ~ model_count, data = df[df$class == "burst", ]))$adj.r.squared
-# [1] 0.5145596
-# > summary(lm(hand_count ~ model_count, data = df[df$class == "aborted", ]))$adj.r.squared
-# [1] 0.9237713
+make_and_plot_lm(ground_truth_2022_12_15, centernet_2022_12_15, 0.3, "CenterNet HourGlass all classes 2022-12-15")
