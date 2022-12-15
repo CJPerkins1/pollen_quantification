@@ -6,6 +6,7 @@ library(dplyr)
 library(stringr)
 library(tidyr)
 library(ggplot2)
+library(lemon) # For facet axes
 
 
 # Importing the data ------------------------------------------------------
@@ -136,7 +137,7 @@ plot_r_squared <- function(df, model_name) {
                  "#5fc77b", # germinated
                  "#2F69FF", # ungerminated
                  "#FFB000", # unknown_germinated
-                 "black",   # aborted
+                 "#787878",   # aborted
                  "#ffa6db", # tube_tip_burst
                  "#fffa70", # tube_tip_bulging
                  "#a8ffe1") #tube_tip
@@ -254,7 +255,7 @@ make_and_plot_lm <- function(ground_truth, inference, confidence_threshold, mode
                  "#5fc77b", # germinated
                  "#2F69FF", # ungerminated
                  "#FFB000", # unknown_germinated
-                 "black",   # aborted
+                 "#787878",   # aborted
                  "#ffa6db", # tube_tip_burst
                  "#fffa70", # tube_tip_bulging
                  "#a8ffe1") #tube_tip
@@ -267,12 +268,12 @@ make_and_plot_lm <- function(ground_truth, inference, confidence_threshold, mode
                         "tube_tip_bulging",
                         "tube_tip")
   
-  ggplot(df, aes(x = hand_count, y = model_count, color = class)) +
-    geom_point(size = 2) +
-    geom_smooth(method = "lm", se = FALSE, size = 2) +
+  ggplot(df, aes(x = hand_count, y = model_count, fill = class)) +
+    geom_abline(intercept = 0, slope = 1, linewidth = 1, linetype = 2) +
+    geom_smooth(method = "lm", se = FALSE, linewidth = 1, color = "black") +
+    geom_point(shape = 21, color = "black", size = 2) +
     # scale_x_continuous(breaks = seq(0, 1, 0.1), labels = seq(0, 1, 0.1), limits = c(0, 1)) +
-    coord_fixed(ratio = 1) +
-    scale_color_manual(values = color_vec,
+    scale_fill_manual(values = color_vec,
                        name = "Class",
                        breaks = c("germinated", 
                                   "ungerminated", 
@@ -291,12 +292,12 @@ make_and_plot_lm <- function(ground_truth, inference, confidence_threshold, mode
                                   "Tube tip burst", 
                                   "Tube tip bulging"),
                        limits = force) +
-    facet_wrap(~class) +
+    facet_rep_wrap(~class) +
+    coord_fixed() +
     theme_bw() +
     labs(title = model_name, x = "Hand counts", y = "Model predictions") +
     theme(axis.title = element_text(size = 26, face = 'bold'),
-          axis.text = element_text(size = 22, face = 'bold', color = 'black'),
-          axis.text.x = element_text(size = 26, face = 'bold', color = 'black'),
+          axis.text = element_text(size = 16, face = 'bold', color = 'black'),
           plot.title = element_text(size = 28, face = 'bold', margin = margin(0, 0, 10, 0)),
           panel.border = element_blank(),
           axis.line = element_line(size = 1, color = 'black'),
@@ -306,8 +307,8 @@ make_and_plot_lm <- function(ground_truth, inference, confidence_threshold, mode
           panel.grid = element_blank(),
           strip.background = element_blank(),
           strip.placement = "outside",
-          legend.title = element_text(size = 18, face = 'bold', color = 'black'),
-          legend.text = element_text(size = 14, face = 'bold', color = 'black'))
+          strip.text = element_text(size = 18, face = 'bold', color = 'black'),
+          legend.position = "none")
   
   ggsave(filename = file.path(getwd(), "plots", "linear_model", paste0(gsub(" ", "_", model_name), "_linear_model.png")),
          device = 'png',
