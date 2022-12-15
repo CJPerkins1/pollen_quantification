@@ -9,13 +9,29 @@ library(ggplot2)
 
 
 # Importing the data ------------------------------------------------------
-ground_truth <- read.table(file = file.path(getwd(), "data", "ground_truth_2022-12-12.tsv"),
+## Ground truth
+ground_truth_2022_12_12 <- read.table(file = file.path(getwd(), "data", "ground_truth", "ground_truth_2022-12-12.tsv"),
                            sep = '\t',
                            header = TRUE)
 
-inference <- read.table(file = file.path(getwd(), "data", "2022-12-12_validation_image_predictions.tsv"),
-                        sep = '\t',
-                        header = TRUE)
+ground_truth_2022_12_15 <- read.table(file = file.path(getwd(), "data", "ground_truth", "ground_truth_2022-12-15.tsv"),
+                           sep = '\t',
+                           header = TRUE)
+
+## Inference
+# All classes
+resnet_2022_12_12 <- read.table(file = file.path(getwd(), "data", "validation_inference", "2022-12-12_validation_image_predictions.tsv"),
+                                sep = '\t',
+                                header = TRUE)
+
+# Just pollen classes, but also nms
+centernet_2022_12_14 <- read.table(file = file.path(getwd(), "data", "validation_inference", "2022-12-14_centernet_val_only_pollen_w_nms_predictions.tsv"),
+                                sep = '\t',
+                                header = TRUE)
+
+# centernet_2022_12_15 <- read.table(file = file.path(getwd(), "data", "2022-12-15_centernet_val_predictions.tsv"),
+#                                 sep = '\t',
+#                                 header = TRUE)
 
 
 # Getting r-squared values ------------------------------------------------
@@ -101,41 +117,76 @@ get_r_squared <- function(ground_truth, inference) {
     output_df <- rbind(output_df, r_squared_df)
   }
   
+  output_df <- output_df %>%
+    filter(r_squared != 0)
+  
   return(output_df)
 }
 
-resnet_2022_12_12 <- get_r_squared(ground_truth, inference)
-resnet_2022_12_12 <- resnet_2022_12_12 %>%
-  filter(class != "tube_tip" &
-         class != "tube_tip_bulging" &
-         class != "tube_tip_burst")
+rsq_resnet_2022_12_12 <- get_r_squared(ground_truth_2022_12_12, resnet_2022_12_12)
+rsq_centernet_2022_12_14 <- get_r_squared(ground_truth_2022_12_12, centernet_2022_12_14)
+
+
+# rsq_centernet_2022_12_15 <- get_r_squared(ground_truth_2022_12_15, centernet_2022_12_15)
 
 
 # Plotting r-squared values -----------------------------------------------
 plot_r_squared <- function(df, model_name) {
-  color_vec <- c("#DC267F", "#5fc77b", "#2F69FF", "#FFB000", "black") # Burst, germinated, ungerminated, unknown_germinated
-  names(color_vec) <- c("burst", "germinated", "ungerminated", "unknown_germinated", "aborted")
+  color_vec <- c("#DC267F", # burst
+                 "#5fc77b", # germinated
+                 "#2F69FF", # ungerminated
+                 "#FFB000", # unknown_germinated
+                 "black",   # aborted
+                 "#ffa6db", # tube_tip_burst
+                 "#fffa70", # tube_tip_bulging
+                 "#a8ffe1") #tube_tip
+  names(color_vec) <- c("burst", 
+                        "germinated", 
+                        "ungerminated", 
+                        "unknown_germinated", 
+                        "aborted", 
+                        "tube_tip_burst",
+                        "tube_tip_bulging",
+                        "tube_tip")
   
-  ggplot(resnet_2022_12_12, aes(x = threshold, y = r_squared, color = class)) +
+  ggplot(df, aes(x = threshold, y = r_squared, color = class)) +
     geom_point(size = 2) +
     scale_x_continuous(breaks = seq(0, 1, 0.1), labels = seq(0, 1, 0.1), limits = c(0, 1)) +
-    scale_color_manual(values = color_vec) +
+    scale_color_manual(values = color_vec,
+                       name = "Class",
+                       breaks = c("germinated", 
+                                  "ungerminated", 
+                                  "burst", 
+                                  "aborted", 
+                                  "unknown_germinated", 
+                                  "tube_tip", 
+                                  "tube_tip_burst", 
+                                  "tube_tip_bulging"),
+                       labels = c("Germinated", 
+                                  "Ungerminated", 
+                                  "Burst", 
+                                  "Aborted", 
+                                  "Unknown germinated", 
+                                  "Tube tip", 
+                                  "Tube tip burst", 
+                                  "Tube tip bulging"),
+                       limits = force) +
     theme_bw() +
     labs(title = model_name, x = "Confidence threshold", y = "R-squared") +
     theme(axis.title = element_text(size = 26, face = 'bold'),
           axis.text = element_text(size = 22, face = 'bold', color = 'black'),
           axis.text.x = element_text(size = 26, face = 'bold', color = 'black'),
           plot.title = element_text(size = 28, face = 'bold', margin = margin(0, 0, 10, 0)),
-          axis.title.x = element_blank(),
           panel.border = element_blank(),
           axis.line = element_line(size = 1, color = 'black'),
           axis.ticks = element_line(size = 1, color = 'black'),
           axis.ticks.length = unit(8, 'pt'),
           plot.margin = margin(0.5, 0.5, 0.5, 0.5, 'cm'),
           panel.grid = element_blank(),
-          # legend.position = 'none',
           strip.background = element_blank(),
-          strip.placement = "outside")
+          strip.placement = "outside",
+          legend.title = element_text(size = 18, face = 'bold', color = 'black'),
+          legend.text = element_text(size = 14, face = 'bold', color = 'black'))
   
   ggsave(filename = file.path(getwd(), "plots", "r_squared", paste0(gsub(" ", "_", model_name), "_r_squared.png")),
          device = 'png',
@@ -145,7 +196,9 @@ plot_r_squared <- function(df, model_name) {
          units = 'in')
 }
 
-plot_r_squared(resnet_2022_12_12, "Faster RCNN Resnet 2022-12-12")
+plot_r_squared(rsq_resnet_2022_12_12, "Faster RCNN Resnet 2022-12-12")
+plot_r_squared(rsq_centernet_2022_12_14, "CenterNet HourGlass only pollen 2022-12-14")
+#plot_r_squared(centernet_2022_12_15, "Faster RCNN Resnet 2022-12-12")
 
 
 

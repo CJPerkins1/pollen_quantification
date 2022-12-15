@@ -7,7 +7,7 @@
 
 library(tidyr)
 
-df <- read.table(file = file.path(getwd(), "data", "ground_truth_2022-12-12.tsv"),
+df <- read.table(file = file.path(getwd(), "data", "ground_truth", "ground_truth_2022-12-12.tsv"),
                  sep = '\t',
                  header = TRUE)
 df <- df %>%
@@ -38,7 +38,7 @@ df$path_string <- paste0(base_dir_path,
 paths <- unique(df$path_string)
 
 write.table(paths,
-            file = file.path(getwd(), "data", "ground_truth_paths.txt"),
+            file = file.path(getwd(), "data", "ground_truth", "ground_truth_paths_2022-12-12.txt"),
             row.names = F,
             col.names = F,
             quote = F)
