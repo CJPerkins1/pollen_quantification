@@ -331,3 +331,154 @@ make_and_plot_lm <- function(ground_truth, inference, confidence_threshold, mode
 make_and_plot_lm(ground_truth_2022_12_12, resnet_2022_12_12, 0.05, "Faster RCNN Resnet 2022-12-12")
 make_and_plot_lm(ground_truth_2022_12_12, centernet_2022_12_14, 0.3, "CenterNet HourGlass only pollen 2022-12-14")
 make_and_plot_lm(ground_truth_2022_12_15, centernet_2022_12_15, 0.3, "CenterNet HourGlass all classes 2022-12-15")
+
+
+
+# Making individual lm plots ----------------------------------------------
+# I sort of want to be able to do individual ones
+make_individual_lm <- function(ground_truth, inference, class_string, confidence_threshold, model_name) {
+  # Processing the ground truth
+  process_ground_truth <- function(df){
+    df <- df %>%
+      complete(name, class) %>%
+      mutate(hand_count = replace_na(size, 0)) %>%
+      select(-size)
+    return(df)
+  }
+  ground_truth <- process_ground_truth(ground_truth)
+  
+  # Processing the inference
+  process_inference <- function(df, confidence_threshold){
+    df <- df %>%
+      mutate(name = paste0(
+        date,
+        "_run",
+        run,
+        "_",
+        tempc,
+        "C_",
+        well,
+        "_t",
+        str_pad(timepoint, 3, pad = "0")
+      )) %>%
+      filter(score >= confidence_threshold) %>%
+      group_by(name, class) %>%
+      summarize(model_count = n(), .groups = "drop") %>%
+      complete(name, class) %>%
+      mutate(model_count = replace_na(model_count, 0)) 
+    
+    return(df)
+  }
+  
+  inference <- process_inference(inference, confidence_threshold)
+  
+  # Combining the two data frames
+  df <- full_join(ground_truth, inference, by = c("name", "class"))
+  
+  df <- df %>%
+    ungroup() %>%
+    complete(name, class) %>%
+    mutate(model_count = replace_na(model_count, 0)) %>%
+    filter(model_count != 0) %>%
+    filter(class == class_string)
+  
+  # Getting the r-squared for plotting
+  regression_r <- summary(lm(hand_count ~ model_count, data = df))$adj.r.squared
+  regression_r <- paste0("R-squared: ", as.character(round(regression_r, digits = 3)))
+  
+  # Plotting
+  color_vec <- c("#DC267F", # burst
+                 "#5fc77b", # germinated
+                 "#2F69FF", # ungerminated
+                 "#FFB000", # unknown_germinated
+                 "#787878",   # aborted
+                 "#ffa6db", # tube_tip_burst
+                 "#fffa70", # tube_tip_bulging
+                 "#a8ffe1") #tube_tip
+  names(color_vec) <- c("burst", 
+                        "germinated", 
+                        "ungerminated", 
+                        "unknown_germinated", 
+                        "aborted", 
+                        "tube_tip_burst",
+                        "tube_tip_bulging",
+                        "tube_tip")
+  
+  # Getting the axis limits
+  axis_limit <- max(c(max(df$hand_count), max(df$model_count))) + 5
+  
+  ggplot(df, aes(x = hand_count, y = model_count, fill = class)) +
+    geom_abline(intercept = 0, slope = 1, linewidth = 1, linetype = 2) +
+    geom_smooth(method = "lm", se = FALSE, linewidth = 1, color = "black") +
+    geom_point(shape = 21, color = "black", size = 3) +
+    annotate(geom = "label",
+             x = 0.8 * axis_limit, 
+             y = 0.05 * axis_limit, 
+             label = regression_r, 
+             fontface = 'bold', 
+             color = 'black', 
+             size = 5,
+             fill = "#bfbfbf") + 
+    scale_x_continuous(limits = c(0, axis_limit)) +
+    scale_y_continuous(limits = c(0, axis_limit)) +
+    scale_fill_manual(values = color_vec,
+                      name = "Class",
+                      breaks = c("germinated", 
+                                 "ungerminated", 
+                                 "burst", 
+                                 "aborted", 
+                                 "unknown_germinated", 
+                                 "tube_tip", 
+                                 "tube_tip_burst", 
+                                 "tube_tip_bulging"),
+                      labels = c("Germinated", 
+                                 "Ungerminated", 
+                                 "Burst", 
+                                 "Aborted", 
+                                 "Unknown germinated", 
+                                 "Tube tip", 
+                                 "Tube tip burst", 
+                                 "Tube tip bulging"),
+                      limits = force) +
+    coord_fixed(ratio = 1) +
+    theme_bw() +
+    labs(title = model_name, x = "Hand counts", y = "Model predictions") +
+    theme(axis.title = element_text(size = 20, face = 'bold'),
+          axis.text = element_text(size = 14, face = 'bold', color = 'black'),
+          plot.title = element_text(size = 22, face = 'bold', margin = margin(0, 0, 10, 0)),
+          panel.border = element_blank(),
+          axis.line = element_line(size = 1, color = 'black'),
+          axis.ticks = element_line(size = 1, color = 'black'),
+          axis.ticks.length = unit(8, 'pt'),
+          plot.margin = margin(0.5, 0.5, 0.5, 0.5, 'cm'),
+          panel.grid = element_blank(),
+          strip.background = element_blank(),
+          strip.placement = "outside",
+          strip.text = element_text(size = 12, face = 'bold', color = 'black'),
+          legend.title = element_text(size = 18, face = 'bold', color = 'black'),
+          legend.text = element_text(size = 14, face = 'bold', color = 'black'))
+  
+  ggsave(filename = file.path(getwd(), 
+                              "plots", 
+                              "linear_model", 
+                              "individual_lm", 
+                              paste0(gsub(" ", "_", model_name), "_", class_string, "_linear_model.png")),
+         device = 'png',
+         width = 8,
+         height = 6,
+         dpi = 400,
+         units = 'in')
+}
+
+# Pollen classes
+make_individual_lm(ground_truth_2022_12_12, centernet_2022_12_14, "aborted", 0.45, "CenterNet HourGlass 2022-12-14")
+make_individual_lm(ground_truth_2022_12_12, centernet_2022_12_14, "burst", 0.59, "CenterNet HourGlass 2022-12-14")
+make_individual_lm(ground_truth_2022_12_12, centernet_2022_12_14, "germinated", 0.39, "CenterNet HourGlass 2022-12-14")
+make_individual_lm(ground_truth_2022_12_12, centernet_2022_12_14, "ungerminated", 0.47, "CenterNet HourGlass 2022-12-14")
+make_individual_lm(ground_truth_2022_12_12, centernet_2022_12_14, "unknown_germinated", 0.2, "CenterNet HourGlass 2022-12-14")
+
+# Tube classes
+make_individual_lm(ground_truth_2022_12_15, centernet_2022_12_15, "tube_tip", 0.34, "CenterNet HourGlass 2022-12-15")
+make_individual_lm(ground_truth_2022_12_15, centernet_2022_12_15, "tube_tip_bulging", 0.01, "CenterNet HourGlass 2022-12-15")
+make_individual_lm(ground_truth_2022_12_15, centernet_2022_12_15, "tube_tip_burst", 0.3, "CenterNet HourGlass 2022-12-15")
+
