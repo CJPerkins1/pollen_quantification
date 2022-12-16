@@ -409,11 +409,11 @@ make_individual_lm <- function(ground_truth, inference, class_string, confidence
   
   ggplot(df, aes(x = hand_count, y = model_count, fill = class)) +
     geom_abline(intercept = 0, slope = 1, linewidth = 1, linetype = 2) +
-    geom_smooth(method = "lm", se = FALSE, linewidth = 1, color = "black") +
+    geom_smooth(method = "lm", se = FALSE, linewidth = 1, color = "#eb4034") +
     geom_point(shape = 21, color = "black", size = 3) +
     annotate(geom = "label",
              x = 0.8 * axis_limit, 
-             y = 0.05 * axis_limit, 
+             y = 0.1 * axis_limit, 
              label = regression_r, 
              fontface = 'bold', 
              color = 'black', 

@@ -48,7 +48,9 @@ get_validation_file_names <- function(ground_truth_file){
 
 get_validation_file_names("ground_truth_2022-12-12.tsv")
 get_validation_file_names("ground_truth_2022-12-15.tsv")
+get_validation_file_names("ground_truth_2022-12-16.tsv")
 
 # The bash command to copy them is:
 # cat /home/exouser/scratch/val_file_names_2022-12-12.txt | xargs -I % cp % /media/volume/sdb/scratch/val_set_2022-12-12
 # cat /home/exouser/scratch/val_file_names_2022-12-15.txt | xargs -I % cp % /media/volume/sdb/scratch/val_set_2022-12-15
+# cat /home/exouser/scratch/val_file_names_2022-12-16.txt | xargs -I % cp % /media/volume/sdb/scratch/val_set_2022-12-16
