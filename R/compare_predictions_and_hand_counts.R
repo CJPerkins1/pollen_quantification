@@ -19,6 +19,10 @@ ground_truth_2022_12_15 <- read.table(file = file.path(getwd(), "data", "ground_
                            sep = '\t',
                            header = TRUE)
 
+ground_truth_2022_12_16 <- read.table(file = file.path(getwd(), "data", "ground_truth", "ground_truth_2022-12-16.tsv"),
+                                      sep = '\t',
+                                      header = TRUE)
+
 ## Inference
 # All classes
 resnet_2022_12_12 <- read.table(file = file.path(getwd(), "data", "validation_inference", "2022-12-12_validation_image_predictions.tsv"),
@@ -30,9 +34,17 @@ centernet_2022_12_14 <- read.table(file = file.path(getwd(), "data", "validation
                                 sep = '\t',
                                 header = TRUE)
 
+# All classes
 centernet_2022_12_15 <- read.table(file = file.path(getwd(), "data", "validation_inference", "2022-12-15_centernet_val_predictions.tsv"),
                                    sep = '\t',
                                    header = TRUE)
+
+# Just tube classes
+centernet_2022_12_16 <- read.table(file = file.path(getwd(), "data", "validation_inference", "2022-12-16_centernet_val_only_tubes_predictions.tsv"),
+                                   sep = '\t',
+                                   header = TRUE)
+
+
 
 
 # Getting r-squared values ------------------------------------------------
@@ -137,6 +149,7 @@ get_r_squared <- function(ground_truth, inference) {
 rsq_resnet_2022_12_12 <- get_r_squared(ground_truth_2022_12_12, resnet_2022_12_12)
 rsq_centernet_2022_12_14 <- get_r_squared(ground_truth_2022_12_12, centernet_2022_12_14)
 rsq_centernet_2022_12_15 <- get_r_squared(ground_truth_2022_12_15, centernet_2022_12_15)
+rsq_centernet_2022_12_16 <- get_r_squared(ground_truth_2022_12_16, centernet_2022_12_16)
 
 
 # Plotting r-squared values -----------------------------------------------
@@ -208,6 +221,7 @@ plot_r_squared <- function(df, model_name) {
 plot_r_squared(rsq_resnet_2022_12_12, "Faster RCNN Resnet 2022-12-12")
 plot_r_squared(rsq_centernet_2022_12_14, "CenterNet HourGlass only pollen 2022-12-14")
 plot_r_squared(rsq_centernet_2022_12_15, "CenterNet HourGlass all classes 2022-12-15")
+plot_r_squared(rsq_centernet_2022_12_16, "CenterNet HourGlass only tubes 2022-12-16")
 
 
 # Plotting linear models --------------------------------------------------
@@ -331,7 +345,7 @@ make_and_plot_lm <- function(ground_truth, inference, confidence_threshold, mode
 make_and_plot_lm(ground_truth_2022_12_12, resnet_2022_12_12, 0.05, "Faster RCNN Resnet 2022-12-12")
 make_and_plot_lm(ground_truth_2022_12_12, centernet_2022_12_14, 0.3, "CenterNet HourGlass only pollen 2022-12-14")
 make_and_plot_lm(ground_truth_2022_12_15, centernet_2022_12_15, 0.3, "CenterNet HourGlass all classes 2022-12-15")
-
+make_and_plot_lm(ground_truth_2022_12_16, centernet_2022_12_16, 0.3, "CenterNet HourGlass only tubes 2022-12-16")
 
 
 # Making individual lm plots ----------------------------------------------
@@ -480,5 +494,4 @@ make_individual_lm(ground_truth_2022_12_12, centernet_2022_12_14, "unknown_germi
 # Tube classes
 make_individual_lm(ground_truth_2022_12_15, centernet_2022_12_15, "tube_tip", 0.34, "CenterNet HourGlass 2022-12-15")
 make_individual_lm(ground_truth_2022_12_15, centernet_2022_12_15, "tube_tip_bulging", 0.01, "CenterNet HourGlass 2022-12-15")
-make_individual_lm(ground_truth_2022_12_15, centernet_2022_12_15, "tube_tip_burst", 0.3, "CenterNet HourGlass 2022-12-15")
-
+make_individual_lm(ground_truth_2022_12_16, centernet_2022_12_16, "tube_tip_burst", 0.25, "CenterNet HourGlass 2022-12-16")
