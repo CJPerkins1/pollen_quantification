@@ -277,10 +277,10 @@ make_and_plot_lm <- function(ground_truth, inference, confidence_threshold, mode
                  "#5fc77b", # germinated
                  "#2F69FF", # ungerminated
                  "#FFB000", # unknown_germinated
-                 "#787878",   # aborted
+                 "#787878", # aborted
                  "#ffa6db", # tube_tip_burst
                  "#fffa70", # tube_tip_bulging
-                 "#a8ffe1") #tube_tip
+                 "#a8ffe1") # tube_tip
   names(color_vec) <- c("burst", 
                         "germinated", 
                         "ungerminated", 
