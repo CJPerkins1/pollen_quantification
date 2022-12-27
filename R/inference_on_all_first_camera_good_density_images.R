@@ -7,6 +7,7 @@
 library(arrow)
 library(dplyr)
 library(tidyr)
+library(stringr)
 library(ggplot2)
 
 
@@ -56,7 +57,8 @@ process_data <- function(df,
     ungroup() %>%
     complete(name, class) %>%
     mutate(count = replace_na(count, 0)) %>%
-    mutate(percentage = replace_na(percentage, 0))
+    mutate(percentage = replace_na(percentage, 0)) %>%
+    mutate(time = as.integer(str_sub(name, - 3, - 1)))
     # collect() # or compute() to return another Arrow Table
   
   return(df)
