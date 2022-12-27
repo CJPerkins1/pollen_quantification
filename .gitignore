@@ -4,3 +4,4 @@
 .Ruserdata
 .DS_Store
 data/full_inference
+plots/all_inference_plots
