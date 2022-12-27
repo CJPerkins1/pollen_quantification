@@ -9,14 +9,17 @@ library(dplyr)
 library(tidyr)
 library(stringr)
 library(ggplot2)
+library(googlesheets4)
 
+# Adding my Google service account credentials
+gs4_auth(path = "~/.credentials/google_sheets_api/service_account.json")
 
 # Importing the data ------------------------------------------------------
 # Using Arrow to import the data as an Arrow Table. 
 inference <- read_delim_arrow(file = file.path(getwd(), 
                                                "data", 
                                                "full_inference", 
-                                               "test_inference.txt"),
+                                               "inference_2022-12-26.tsv"),
                               delim = '\t',
                               col_names = TRUE,
                               as_data_frame = FALSE)
@@ -24,6 +27,15 @@ inference <- read_delim_arrow(file = file.path(getwd(),
 # importing has some weird error with not properly skipping the first line 
 # and getting confused with the column titles.
 inference$score <- as.double(inference$score)
+
+# None of the images are named after their accession, just the wells. The
+# required information to link well to accession can be found in this sheet:
+wells_to_accessions <- read_sheet("1yQ5yAKiL6BzwZ-wH-Q44RoUEwMZztTYafzdvVylq6fo")
+
+# Only keeping the columns we need
+wells_to_accessions <- wells_to_accessions[ , c("date", "run", "well", "temp_target", "accession")]
+wells_to_accessions$date <- as.character(wells_to_accessions$date)
+
 
 # Cleaning up the data ----------------------------------------------------
 # Clean-up, confidence cutoffs, adding accession info
@@ -58,7 +70,11 @@ process_data <- function(df,
     complete(name, class) %>%
     mutate(count = replace_na(count, 0)) %>%
     mutate(percentage = replace_na(percentage, 0)) %>%
-    mutate(time = as.integer(str_sub(name, - 3, - 1)))
+    mutate(time = as.integer(str_sub(name, -3, -1)),
+           date = str_sub(name, 1, 10),
+           run = as.double(str_sub(name, 15, 15)),
+           well = str_sub(name, 21, 22)) %>%
+    filter(time <= 82)
     # collect() # or compute() to return another Arrow Table
   
   return(df)
@@ -71,8 +87,22 @@ processed_inference <- process_data(inference,
                                     0.2, # unknown_germinated_cutoff
                                     0.45) # aborted_cutoff
 
-# Making a plot -----------------------------------------------------------
+# Adding back in the accession and temp metadata
+processed_inference <- left_join(processed_inference, wells_to_accessions, by = c("date", "run", "well"))
 
+# Testing the results
+test_df <- tail(processed_inference, 10000)
+
+
+# Making a simplified data frame for plotting -----------------------------
+# I'll try just taking the averages across accessions first, just to have a 
+# chance of even getting everything on the plot.
+simplified_df <- processed_inference %>%
+  group_by(accession, temp_target, time, class) %>%
+  summarize(mean_percentage = mean(percentage))
+
+
+# Making plots with the simplified data -----------------------------------
 make_plot <- function(input_df, image_name) {
   color_vec <- c("#DC267F", # burst
                  "#5fc77b", # germinated
@@ -91,14 +121,18 @@ make_plot <- function(input_df, image_name) {
                         "tube_tip_bulging",
                         "tube_tip")
   
-  ggplot(input_df, aes(x = timepoint, y = percentage, color = class)) +
-    # geom_line(size = 2) +
-    geom_smooth(span = 0.4, se = FALSE, size = 2) +
-    geom_point(size = 2) +
+  ggplot(input_df, aes(x = time, y = mean_percentage, color = class, linetype = accession)) +
+    geom_line(linewidth = 0.5, alpha = 0.5) +
+    # geom_smooth(span = 0.4, se = FALSE, size = 2) +
+    # geom_point(size = 2) +
     scale_color_manual(values = color_vec) +
-    scale_y_continuous(breaks = c(0, 0.25, .5, .75, 1), 
+    # scale_linetype_manual(values = rep.int(1, 186)) +
+    scale_linetype_manual(values = rep.int(1, 191)) +
+    scale_x_continuous(expand = c(0, 0)) +
+    scale_y_continuous(breaks = c(0, 0.25, .5, .75, 1),
                        labels = c("0%", "25%", "50%", "75%", "100%"),
-                       limits = c(0, 1)) +
+                       limits = c(0, 1),
+                       expand = c(0, 0)) +
     labs(title = image_name,
          y = "Percentage") +
     theme_bw() +
@@ -117,7 +151,7 @@ make_plot <- function(input_df, image_name) {
           strip.background = element_blank(),
           strip.placement = "outside")
   
-  ggsave(filename = file.path(getwd(), "plots", paste0(image_name, ".png")),
+  ggsave(filename = file.path(getwd(), "plots", "all_inference_plots", paste0(image_name, ".png")),
          device = 'png',
          width = 12,
          height = 8,
@@ -125,5 +159,6 @@ make_plot <- function(input_df, image_name) {
          units = 'in')
 }
 
-make_plot(output_df, name)
+make_plot(simplified_df[simplified_df$temp_target == 26, ], "All inference from first camera at 26C")
+make_plot(simplified_df[simplified_df$temp_target == 34, ], "All inference from first camera at 34C")
 
