@@ -123,8 +123,6 @@ make_plot <- function(input_df, image_name) {
   
   ggplot(input_df, aes(x = time, y = mean_percentage, color = class, linetype = accession)) +
     geom_line(linewidth = 0.5, alpha = 0.5) +
-    # geom_smooth(span = 0.4, se = FALSE, size = 2) +
-    # geom_point(size = 2) +
     scale_color_manual(values = color_vec) +
     # scale_linetype_manual(values = rep.int(1, 186)) +
     scale_linetype_manual(values = rep.int(1, 191)) +
@@ -142,8 +140,8 @@ make_plot <- function(input_df, image_name) {
           plot.title = element_text(size = 28, face = 'bold', margin = margin(0, 0, 10, 0)),
           axis.title.x = element_blank(),
           panel.border = element_blank(),
-          axis.line = element_line(size = 1, color = 'black'),
-          axis.ticks = element_line(size = 1, color = 'black'),
+          axis.line = element_line(linewidth = 1, color = 'black'),
+          axis.ticks = element_line(linewidth = 1, color = 'black'),
           axis.ticks.length = unit(8, 'pt'),
           plot.margin = margin(0.5, 0.5, 0.5, 0.5, 'cm'),
           panel.grid = element_blank(),
@@ -159,6 +157,64 @@ make_plot <- function(input_df, image_name) {
          units = 'in')
 }
 
+make_plot_with_lines <- function(input_df, image_name) {
+  color_vec <- c("#DC267F", # burst
+                 "#5fc77b", # germinated
+                 "#2F69FF", # ungerminated
+                 "#FFB000", # unknown_germinated
+                 "#787878", # aborted
+                 "#ffa6db", # tube_tip_burst
+                 "#fffa70", # tube_tip_bulging
+                 "#a8ffe1") # tube_tip
+  names(color_vec) <- c("burst", 
+                        "germinated", 
+                        "ungerminated", 
+                        "unknown_germinated", 
+                        "aborted", 
+                        "tube_tip_burst",
+                        "tube_tip_bulging",
+                        "tube_tip")
+  
+  ggplot(input_df, aes(x = time, y = mean_percentage, color = class)) +
+    geom_line(aes(linetype = accession), linewidth = 0.5, alpha = 0.1) +
+    geom_smooth(span = 0.4, se = FALSE, size = 2) +
+    scale_color_manual(values = color_vec) +
+    scale_linetype_manual(values = rep.int(1, 191)) +
+    scale_x_continuous(expand = c(0, 0)) +
+    scale_y_continuous(breaks = c(0, 0.25, .5, .75, 1),
+                       labels = c("0%", "25%", "50%", "75%", "100%"),
+                       limits = c(0, 1),
+                       expand = c(0, 0)) +
+    labs(title = image_name,
+         y = "Percentage") +
+    theme_bw() +
+    theme(axis.title = element_text(size = 26, face = 'bold'),
+          axis.text = element_text(size = 22, face = 'bold', color = 'black'),
+          axis.text.x = element_text(size = 26, face = 'bold', color = 'black'),
+          plot.title = element_text(size = 28, face = 'bold', margin = margin(0, 0, 10, 0)),
+          axis.title.x = element_blank(),
+          panel.border = element_blank(),
+          axis.line = element_line(linewidth = 1, color = 'black'),
+          axis.ticks = element_line(linewidth = 1, color = 'black'),
+          axis.ticks.length = unit(8, 'pt'),
+          plot.margin = margin(0.5, 0.5, 0.5, 0.5, 'cm'),
+          panel.grid = element_blank(),
+          legend.position = 'none',
+          strip.background = element_blank(),
+          strip.placement = "outside")
+  
+  ggsave(filename = file.path(getwd(), "plots", "all_inference_plots", paste0(image_name, "_with_lines.png")),
+         device = 'png',
+         width = 12,
+         height = 8,
+         dpi = 400,
+         units = 'in')
+}
+
+
 make_plot(simplified_df[simplified_df$temp_target == 26, ], "All inference from first camera at 26C")
 make_plot(simplified_df[simplified_df$temp_target == 34, ], "All inference from first camera at 34C")
+
+make_plot_with_lines(simplified_df[simplified_df$temp_target == 26, ], "All inference from first camera at 26C")
+make_plot_with_lines(simplified_df[simplified_df$temp_target == 34, ], "All inference from first camera at 34C")
 
