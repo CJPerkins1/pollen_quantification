@@ -123,35 +123,58 @@ make_plot <- function(input_df, image_name) {
   
   ggplot(input_df, aes(x = time, y = mean_percentage, color = class, linetype = accession)) +
     geom_line(linewidth = 0.5, alpha = 0.5) +
-    scale_color_manual(values = color_vec) +
-    # scale_linetype_manual(values = rep.int(1, 186)) +
-    scale_linetype_manual(values = rep.int(1, 191)) +
-    scale_x_continuous(expand = c(0, 0)) +
+    scale_color_manual(values = color_vec,
+                       name = "Class",
+                       breaks = c("germinated", 
+                                  "ungerminated", 
+                                  "burst", 
+                                  "aborted", 
+                                  "unknown_germinated", 
+                                  "tube_tip", 
+                                  "tube_tip_burst", 
+                                  "tube_tip_bulging"),
+                       labels = c("Germinated", 
+                                  "Ungerminated", 
+                                  "Burst", 
+                                  "Aborted", 
+                                  "Unknown germinated", 
+                                  "Tube tip", 
+                                  "Tube tip burst", 
+                                  "Tube tip bulging"),
+                       limits = force,
+                       guide = guide_legend(override.aes = list(alpha = 1, linewidth = 2))) +
+    scale_linetype_manual(values = rep.int(1, 191), guide = "none") +
+    scale_x_continuous(breaks = c(0, 20, 40, 60, 80),
+                       labels = c(15, 45, 75, 105, 135),
+                       limits = c(0, 82),
+                       expand = c(0, 0)) +
     scale_y_continuous(breaks = c(0, 0.25, .5, .75, 1),
                        labels = c("0%", "25%", "50%", "75%", "100%"),
                        limits = c(0, 1),
                        expand = c(0, 0)) +
     labs(title = image_name,
-         y = "Percentage") +
+         x = "Time (minutes)",
+         y = "Class percentage") +
     theme_bw() +
     theme(axis.title = element_text(size = 26, face = 'bold'),
           axis.text = element_text(size = 22, face = 'bold', color = 'black'),
           axis.text.x = element_text(size = 26, face = 'bold', color = 'black'),
           plot.title = element_text(size = 28, face = 'bold', margin = margin(0, 0, 10, 0)),
-          axis.title.x = element_blank(),
           panel.border = element_blank(),
           axis.line = element_line(linewidth = 1, color = 'black'),
           axis.ticks = element_line(linewidth = 1, color = 'black'),
           axis.ticks.length = unit(8, 'pt'),
           plot.margin = margin(0.5, 0.5, 0.5, 0.5, 'cm'),
           panel.grid = element_blank(),
-          legend.position = 'none',
+          legend.position = 'right',
+          legend.title = element_text(size = 18, face = 'bold', color = 'black'),
+          legend.text = element_text(size = 14, face = 'bold', color = 'black'),
           strip.background = element_blank(),
           strip.placement = "outside")
   
   ggsave(filename = file.path(getwd(), "plots", "all_inference_plots", paste0(image_name, ".png")),
          device = 'png',
-         width = 12,
+         width = 14,
          height = 8,
          dpi = 400,
          units = 'in')
@@ -176,45 +199,68 @@ make_plot_with_lines <- function(input_df, image_name) {
                         "tube_tip")
   
   ggplot(input_df, aes(x = time, y = mean_percentage, color = class)) +
-    geom_line(aes(linetype = accession), linewidth = 0.5, alpha = 0.1) +
-    geom_smooth(span = 0.4, se = FALSE, size = 2) +
-    scale_color_manual(values = color_vec) +
-    scale_linetype_manual(values = rep.int(1, 191)) +
-    scale_x_continuous(expand = c(0, 0)) +
+    geom_line(aes(linetype = accession), linewidth = 0.5, alpha = 0.15) +
+    geom_smooth(span = 0.4, se = FALSE, size = 2, fullrange = TRUE) +
+    scale_color_manual(values = color_vec,
+                       name = "Class",
+                       breaks = c("germinated", 
+                                  "ungerminated", 
+                                  "burst", 
+                                  "aborted", 
+                                  "unknown_germinated", 
+                                  "tube_tip", 
+                                  "tube_tip_burst", 
+                                  "tube_tip_bulging"),
+                       labels = c("Germinated", 
+                                  "Ungerminated", 
+                                  "Burst", 
+                                  "Aborted", 
+                                  "Unknown germinated", 
+                                  "Tube tip", 
+                                  "Tube tip burst", 
+                                  "Tube tip bulging"),
+                       limits = force) +
+    scale_linetype_manual(values = rep.int(1, 191), guide = "none") +
+    scale_x_continuous(breaks = c(0, 20, 40, 60, 80),
+                       labels = c(15, 45, 75, 105, 135),
+                       limits = c(0, 82),
+                       expand = c(0, 0)) +
     scale_y_continuous(breaks = c(0, 0.25, .5, .75, 1),
                        labels = c("0%", "25%", "50%", "75%", "100%"),
                        limits = c(0, 1),
                        expand = c(0, 0)) +
     labs(title = image_name,
-         y = "Percentage") +
+         x = "Time (minutes)",
+         y = "Class percentage") +
     theme_bw() +
     theme(axis.title = element_text(size = 26, face = 'bold'),
           axis.text = element_text(size = 22, face = 'bold', color = 'black'),
           axis.text.x = element_text(size = 26, face = 'bold', color = 'black'),
           plot.title = element_text(size = 28, face = 'bold', margin = margin(0, 0, 10, 0)),
-          axis.title.x = element_blank(),
           panel.border = element_blank(),
           axis.line = element_line(linewidth = 1, color = 'black'),
           axis.ticks = element_line(linewidth = 1, color = 'black'),
           axis.ticks.length = unit(8, 'pt'),
           plot.margin = margin(0.5, 0.5, 0.5, 0.5, 'cm'),
           panel.grid = element_blank(),
-          legend.position = 'none',
+          legend.position = 'right',
+          legend.title = element_text(size = 18, face = 'bold', color = 'black'),
+          legend.text = element_text(size = 14, face = 'bold', color = 'black'),
           strip.background = element_blank(),
           strip.placement = "outside")
   
   ggsave(filename = file.path(getwd(), "plots", "all_inference_plots", paste0(image_name, "_with_lines.png")),
          device = 'png',
-         width = 12,
+         width = 14,
          height = 8,
          dpi = 400,
          units = 'in')
 }
 
 
-make_plot(simplified_df[simplified_df$temp_target == 26, ], "All inference from first camera at 26C")
-make_plot(simplified_df[simplified_df$temp_target == 34, ], "All inference from first camera at 34C")
+make_plot(simplified_df[simplified_df$temp_target == 26, ], "All inference at 26C")
+make_plot(simplified_df[simplified_df$temp_target == 34, ], "All inference at 34C")
 
-make_plot_with_lines(simplified_df[simplified_df$temp_target == 26, ], "All inference from first camera at 26C")
-make_plot_with_lines(simplified_df[simplified_df$temp_target == 34, ], "All inference from first camera at 34C")
+make_plot_with_lines(simplified_df[simplified_df$temp_target == 26, ], "All inference at 26C")
+make_plot_with_lines(simplified_df[simplified_df$temp_target == 34, ], "All inference at 34C")
 
