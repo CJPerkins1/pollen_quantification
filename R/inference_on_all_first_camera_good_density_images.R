@@ -9,6 +9,7 @@ library(dplyr)
 library(tidyr)
 library(stringr)
 library(ggplot2)
+library(ggnewscale)
 library(googlesheets4)
 
 # Adding my Google service account credentials
@@ -65,6 +66,8 @@ process_data <- function(df,
     group_by(name, class) %>%
     summarize(count = n()) %>%
     collect %>%
+    filter(class != "unknown_germinated") %>%
+    # filter(class != "ungerminated") %>%
     mutate(percentage = count / sum(count)) %>%
     ungroup() %>%
     complete(name, class) %>%
@@ -75,7 +78,7 @@ process_data <- function(df,
            run = as.double(str_sub(name, 15, 15)),
            well = str_sub(name, 21, 22)) %>%
     filter(time <= 82)
-    # collect() # or compute() to return another Arrow Table
+
   
   return(df)
 }
@@ -91,7 +94,7 @@ processed_inference <- process_data(inference,
 processed_inference <- left_join(processed_inference, wells_to_accessions, by = c("date", "run", "well"))
 
 # Testing the results
-test_df <- tail(processed_inference, 10000)
+# test_df <- tail(processed_inference, 10000)
 
 
 # Making a simplified data frame for plotting -----------------------------
@@ -104,9 +107,12 @@ simplified_df <- processed_inference %>%
 
 # Making plots with the simplified data -----------------------------------
 make_plot <- function(input_df, image_name) {
-  color_vec <- c("#DC267F", # burst
-                 "#5fc77b", # germinated
-                 "#2F69FF", # ungerminated
+  # color_vec <- c("#DC267F", # burst
+  color_vec <- c("#FF00FF", # burst
+                 # "#5fc77b", # germinated
+                 "#11e00d", # germinated
+                 # "#2F69FF", # ungerminated
+                 "#1b74fa", # ungerminated
                  "#FFB000", # unknown_germinated
                  "#787878", # aborted
                  "#ffa6db", # tube_tip_burst
@@ -125,16 +131,16 @@ make_plot <- function(input_df, image_name) {
     geom_line(linewidth = 0.5, alpha = 0.5) +
     scale_color_manual(values = color_vec,
                        name = "Class",
-                       breaks = c("germinated", 
-                                  "ungerminated", 
+                       breaks = c("ungerminated", 
+                                  "germinated", 
                                   "burst", 
                                   "aborted", 
                                   "unknown_germinated", 
                                   "tube_tip", 
                                   "tube_tip_burst", 
                                   "tube_tip_bulging"),
-                       labels = c("Germinated", 
-                                  "Ungerminated", 
+                       labels = c("Ungerminated", 
+                                  "Germinated", 
                                   "Burst", 
                                   "Aborted", 
                                   "Unknown germinated", 
@@ -181,9 +187,12 @@ make_plot <- function(input_df, image_name) {
 }
 
 make_plot_with_lines <- function(input_df, image_name) {
-  color_vec <- c("#DC267F", # burst
-                 "#5fc77b", # germinated
-                 "#2F69FF", # ungerminated
+  # color_vec <- c("#DC267F", # burst
+  color_vec <- c("#FF00FF", # burst
+                 # "#5fc77b", # germinated
+                 "#11e00d", # germinated
+                 # "#2F69FF", # ungerminated
+                 "#1b74fa", # ungerminated
                  "#FFB000", # unknown_germinated
                  "#787878", # aborted
                  "#ffa6db", # tube_tip_burst
@@ -203,16 +212,16 @@ make_plot_with_lines <- function(input_df, image_name) {
     geom_smooth(span = 0.4, se = FALSE, size = 2, fullrange = TRUE) +
     scale_color_manual(values = color_vec,
                        name = "Class",
-                       breaks = c("germinated", 
-                                  "ungerminated", 
+                       breaks = c("ungerminated", 
+                                  "germinated", 
                                   "burst", 
                                   "aborted", 
                                   "unknown_germinated", 
                                   "tube_tip", 
                                   "tube_tip_burst", 
                                   "tube_tip_bulging"),
-                       labels = c("Germinated", 
-                                  "Ungerminated", 
+                       labels = c("Ungerminated", 
+                                  "Germinated", 
                                   "Burst", 
                                   "Aborted", 
                                   "Unknown germinated", 
@@ -263,4 +272,94 @@ make_plot(simplified_df[simplified_df$temp_target == 34, ], "All inference at 34
 
 make_plot_with_lines(simplified_df[simplified_df$temp_target == 26, ], "All inference at 26C")
 make_plot_with_lines(simplified_df[simplified_df$temp_target == 34, ], "All inference at 34C")
+
+
+
+# Making plots with accessions highlighted --------------------------------
+make_plot_with_highlight <- function(input_df, image_name, accession_id) {
+  # color_vec <- c("#DC267F", # burst
+  color_vec <- c("#FF00FF", # burst
+                 "#11e00d", # germinated
+                 "#1b74fa", # ungerminated
+                 "#FFB000", # unknown_germinated
+                 "#787878", # aborted
+                 "#ffa6db", # tube_tip_burst
+                 "#fffa70", # tube_tip_bulging
+                 "#a8ffe1") # tube_tip
+  names(color_vec) <- c("burst", 
+                        "germinated", 
+                        "ungerminated", 
+                        "unknown_germinated", 
+                        "aborted", 
+                        "tube_tip_burst",
+                        "tube_tip_bulging",
+                        "tube_tip")
+  
+  ggplot(input_df, aes(x = time, y = mean_percentage, color = class)) +
+    geom_line(aes(linetype = accession), linewidth = 0.5, alpha = 0.05) +
+    # geom_smooth(span = 0.4, se = FALSE, size = 2, fullrange = TRUE, alpha = 0.1) +
+    geom_line(stat = "smooth", span = 0.4, se = FALSE, size = 1.5, fullrange = TRUE, alpha = 0.5) +
+    scale_color_manual(values = color_vec,
+                       name = "Class",
+                       breaks = c("ungerminated", 
+                                  "germinated", 
+                                  "burst", 
+                                  "aborted", 
+                                  "unknown_germinated", 
+                                  "tube_tip", 
+                                  "tube_tip_burst", 
+                                  "tube_tip_bulging"),
+                       labels = c("Ungerminated", 
+                                  "Germinated", 
+                                  "Burst", 
+                                  "Aborted", 
+                                  "Unknown germinated", 
+                                  "Tube tip", 
+                                  "Tube tip burst", 
+                                  "Tube tip bulging"),
+                       limits = force) +
+    scale_linetype_manual(values = rep.int(1, 191), guide = "none") +
+    geom_line(data = input_df[input_df$accession == {{accession_id}}, ], linetype = '41', linewidth = 2) +
+    scale_x_continuous(breaks = c(0, 20, 40, 60, 80),
+                       labels = c(15, 45, 75, 105, 135),
+                       limits = c(0, 82),
+                       expand = c(0, 0)) +
+    scale_y_continuous(breaks = c(0, 0.25, .5, .75, 1),
+                       labels = c("0%", "25%", "50%", "75%", "100%"),
+                       limits = c(0, 1),
+                       expand = c(0, 0)) +
+    labs(title = image_name,
+         x = "Time (minutes)",
+         y = "Class percentage") +
+    theme_bw() +
+    theme(axis.title = element_text(size = 26, face = 'bold'),
+          axis.text = element_text(size = 22, face = 'bold', color = 'black'),
+          axis.text.x = element_text(size = 26, face = 'bold', color = 'black'),
+          plot.title = element_text(size = 28, face = 'bold', margin = margin(0, 0, 10, 0)),
+          panel.border = element_blank(),
+          axis.line = element_line(linewidth = 1, color = 'black'),
+          axis.ticks = element_line(linewidth = 1, color = 'black'),
+          axis.ticks.length = unit(8, 'pt'),
+          plot.margin = margin(0.5, 0.5, 0.5, 0.5, 'cm'),
+          panel.grid = element_blank(),
+          legend.position = 'right',
+          legend.title = element_text(size = 18, face = 'bold', color = 'black'),
+          legend.text = element_text(size = 14, face = 'bold', color = 'black'),
+          strip.background = element_blank(),
+          strip.placement = "outside")
+  
+  ggsave(filename = file.path(getwd(), "plots", "all_inference_plots", paste0(image_name, "_with_highlight.png")),
+         device = 'png',
+         width = 14,
+         height = 8,
+         dpi = 400,
+         units = 'in')
+}
+
+make_plot_with_highlight(simplified_df[simplified_df$temp_target == 26, ], "Heinz at 26 °C", "CW0000")
+make_plot_with_highlight(simplified_df[simplified_df$temp_target == 34, ], "Heinz at 34 °C", "CW0000")
+
+make_plot_with_highlight(simplified_df[simplified_df$temp_target == 34, ], "Tamaulipas at 34 °C", "CW0002")
+
+
 
