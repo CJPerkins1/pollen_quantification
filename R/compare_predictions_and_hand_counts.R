@@ -401,14 +401,23 @@ make_individual_lm <- function(ground_truth, inference, class_string, confidence
   regression_r <- paste0("R-squared: ", as.character(round(regression_r, digits = 3)))
   
   # Plotting
-  color_vec <- c("#DC267F", # burst
-                 "#5fc77b", # germinated
-                 "#2F69FF", # ungerminated
+  # color_vec <- c("#DC267F", # burst
+  #                "#5fc77b", # germinated
+  #                "#2F69FF", # ungerminated
+  #                "#FFB000", # unknown_germinated
+  #                "#787878",   # aborted
+  #                "#ffa6db", # tube_tip_burst
+  #                "#fffa70", # tube_tip_bulging
+  #                "#a8ffe1") #tube_tip
+  # PAG colors
+  color_vec <- c("#FF00FF", # burst
+                 "#11e00d", # germinated
+                 "#1b74fa", # ungerminated
                  "#FFB000", # unknown_germinated
-                 "#787878",   # aborted
+                 "#787878", # aborted
                  "#ffa6db", # tube_tip_burst
                  "#fffa70", # tube_tip_bulging
-                 "#a8ffe1") #tube_tip
+                 "#f2b33f") # tube_tip
   names(color_vec) <- c("burst", 
                         "germinated", 
                         "ungerminated", 
@@ -459,18 +468,19 @@ make_individual_lm <- function(ground_truth, inference, class_string, confidence
     labs(title = model_name, x = "Hand counts", y = "Model predictions") +
     theme(axis.title = element_text(size = 20, face = 'bold'),
           axis.text = element_text(size = 14, face = 'bold', color = 'black'),
-          plot.title = element_text(size = 22, face = 'bold', margin = margin(0, 0, 10, 0)),
+          plot.title = element_text(size = 26, face = 'bold', margin = margin(0, 0, 10, 0)),
           panel.border = element_blank(),
           axis.line = element_line(size = 1, color = 'black'),
           axis.ticks = element_line(size = 1, color = 'black'),
           axis.ticks.length = unit(8, 'pt'),
           plot.margin = margin(0.5, 0.5, 0.5, 0.5, 'cm'),
           panel.grid = element_blank(),
-          strip.background = element_blank(),
-          strip.placement = "outside",
-          strip.text = element_text(size = 12, face = 'bold', color = 'black'),
-          legend.title = element_text(size = 18, face = 'bold', color = 'black'),
-          legend.text = element_text(size = 14, face = 'bold', color = 'black'))
+          legend.position = "none")
+          # strip.background = element_blank(),
+          # strip.placement = "outside",
+          # strip.text = element_text(size = 12, face = 'bold', color = 'black'),
+          # legend.title = element_text(size = 18, face = 'bold', color = 'black'),
+          # legend.text = element_text(size = 14, face = 'bold', color = 'black'))
   
   ggsave(filename = file.path(getwd(), 
                               "plots", 
@@ -478,7 +488,7 @@ make_individual_lm <- function(ground_truth, inference, class_string, confidence
                               "individual_lm", 
                               paste0(gsub(" ", "_", model_name), "_", class_string, "_linear_model.png")),
          device = 'png',
-         width = 8,
+         width = 6,
          height = 6,
          dpi = 400,
          units = 'in')
@@ -495,3 +505,9 @@ make_individual_lm(ground_truth_2022_12_12, centernet_2022_12_14, "unknown_germi
 make_individual_lm(ground_truth_2022_12_15, centernet_2022_12_15, "tube_tip", 0.34, "CenterNet HourGlass 2022-12-15")
 make_individual_lm(ground_truth_2022_12_15, centernet_2022_12_15, "tube_tip_bulging", 0.01, "CenterNet HourGlass 2022-12-15")
 make_individual_lm(ground_truth_2022_12_16, centernet_2022_12_16, "tube_tip_burst", 0.25, "CenterNet HourGlass 2022-12-16")
+
+# Making plots for the PAG talk
+make_individual_lm(ground_truth_2022_12_12, centernet_2022_12_14, "burst", 0.59, "Burst pollen")
+make_individual_lm(ground_truth_2022_12_12, centernet_2022_12_14, "germinated", 0.39, "Germinated pollen")
+make_individual_lm(ground_truth_2022_12_12, centernet_2022_12_14, "ungerminated", 0.47, "Ungerminated pollen")
+make_individual_lm(ground_truth_2022_12_15, centernet_2022_12_15, "tube_tip", 0.34, "Pollen tube tip")
