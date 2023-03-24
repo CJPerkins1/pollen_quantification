@@ -266,12 +266,95 @@ make_plot_with_lines <- function(input_df, image_name) {
          units = 'in')
 }
 
+make_plot_nappn <- function(input_df, image_name) {
+  color_vec <- c("#FF00FF", # burst
+                          # "#5fc77b", # germinated
+                          "#11e00d", # germinated
+                          # "#2F69FF", # ungerminated
+                          "#1b74fa", # ungerminated
+                          "#FFB000", # unknown_germinated
+                          "#787878", # aborted
+                          "#ffa6db", # tube_tip_burst
+                          "#fffa70", # tube_tip_bulging
+                          "#a8ffe1") # tube_tip
+                          names(color_vec) <- c("burst", 
+                                                "germinated", 
+                                                "ungerminated", 
+                                                "unknown_germinated", 
+                                                "aborted", 
+                                                "tube_tip_burst",
+                                                "tube_tip_bulging",
+                                                "tube_tip")
+                          
+                          ggplot(input_df, aes(x = time, y = mean_percentage, color = class)) +
+                            geom_line(aes(linetype = accession), linewidth = 0.5, alpha = 0.15) +
+                            geom_smooth(span = 0.4, se = FALSE, size = 2, fullrange = TRUE) +
+                            scale_color_manual(values = color_vec,
+                                               name = "Class",
+                                               breaks = c("ungerminated", 
+                                                          "germinated", 
+                                                          "burst", 
+                                                          "aborted", 
+                                                          "unknown_germinated", 
+                                                          "tube_tip", 
+                                                          "tube_tip_burst", 
+                                                          "tube_tip_bulging"),
+                                               labels = c("Ungerminated", 
+                                                          "Germinated", 
+                                                          "Burst", 
+                                                          "Aborted", 
+                                                          "Unknown germinated", 
+                                                          "Tube tip", 
+                                                          "Tube tip burst", 
+                                                          "Tube tip bulging"),
+                                               limits = force) +
+                            scale_linetype_manual(values = rep.int(1, 191), guide = "none") +
+                            scale_x_continuous(breaks = c(0, 20, 40, 60, 80),
+                                               labels = c(15, 45, 75, 105, 135),
+                                               limits = c(0, 82),
+                                               expand = c(0, 0)) +
+                            scale_y_continuous(breaks = c(0, 0.25, .5, .75, 1),
+                                               labels = c("0%", "25%", "50%", "75%", "100%"),
+                                               limits = c(0, 1),
+                                               expand = c(0, 0)) +
+                            labs(title = image_name,
+                                 x = "Time (minutes)",
+                                 y = "Class percentage") +
+                            theme_bw() +
+                            theme(axis.title = element_text(size = 26, face = 'bold'),
+                                  axis.text = element_text(size = 22, face = 'bold', color = 'black'),
+                                  axis.text.x = element_text(size = 26, face = 'bold', color = 'black'),
+                                  plot.title = element_blank(),
+                                  # plot.title = element_text(size = 28, face = 'bold', margin = margin(0, 0, 10, 0)),
+                                  panel.border = element_blank(),
+                                  axis.line = element_line(linewidth = 1, color = 'black'),
+                                  axis.ticks = element_line(linewidth = 1, color = 'black'),
+                                  axis.ticks.length = unit(8, 'pt'),
+                                  plot.margin = margin(0.5, 0.5, 0.5, 0.5, 'cm'),
+                                  panel.grid = element_blank(),
+                                  legend.position = 'none',
+                                  # legend.position = 'bottom',
+                                  # legend.title = element_text(size = 18, face = 'bold', color = 'black'),
+                                  # legend.text = element_text(size = 14, face = 'bold', color = 'black'),
+                                  strip.background = element_blank(),
+                                  strip.placement = "outside")
+                          
+                          ggsave(filename = file.path(getwd(), "plots", "all_inference_plots", paste0(image_name, "_nappn.png")),
+                                 device = 'png',
+                                 width = 14,
+                                 height = 8.5,
+                                 dpi = 400,
+                                 units = 'in')
+}
 
 make_plot(simplified_df[simplified_df$temp_target == 26, ], "All inference at 26 ºC")
 make_plot(simplified_df[simplified_df$temp_target == 34, ], "All inference at 34 ºC")
 
 make_plot_with_lines(simplified_df[simplified_df$temp_target == 26, ], "All inference at 26 ºC")
 make_plot_with_lines(simplified_df[simplified_df$temp_target == 34, ], "All inference at 34 ºC")
+
+make_plot_nappn(simplified_df[simplified_df$temp_target == 26, ], "All inference at 26 ºC")
+make_plot_nappn(simplified_df[simplified_df$temp_target == 34, ], "All inference at 34 ºC")
 
 
 
@@ -498,7 +581,7 @@ ggsave(filename = file.path(getwd(), "plots", "all_inference_plots", "burst_at_8
 
 # Getting info about specific accessions ----------------------------------
 # I want to pull the vids for specific accessions, so here they are:
-heinz_info <- wells_to_accessions[wells_to_accessions$accession == "CW000", ]
+heinz_info <- wells_to_accessions[wells_to_accessions$accession == "CW0000", ]
 tamaulipas_info <- wells_to_accessions[wells_to_accessions$accession == "CW0002", ]
 CW0164_info <- wells_to_accessions[wells_to_accessions$accession == "CW0164", ]
 
