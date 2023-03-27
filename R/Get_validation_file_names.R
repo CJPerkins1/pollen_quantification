@@ -44,7 +44,6 @@ get_validation_file_names("ground_truth_2022-12-16.tsv")
 
 get_validation_file_names("ground_truth_2023-03-24.tsv")
 
-
 # The bash command to copy them is:
 # cat /home/exouser/scratch/val_file_names_2022-12-12.txt | xargs -I % cp % /media/volume/sdb/scratch/val_set_2022-12-12
 # cat /home/exouser/scratch/val_file_names_2022-12-15.txt | xargs -I % cp % /media/volume/sdb/scratch/val_set_2022-12-15

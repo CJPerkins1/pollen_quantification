@@ -23,6 +23,10 @@ ground_truth_2022_12_16 <- read.table(file = file.path(getwd(), "data", "ground_
                                       sep = '\t',
                                       header = TRUE)
 
+ground_truth_2023_03_24 <- read.table(file = file.path(getwd(), "data", "ground_truth", "ground_truth_2023-03-24.tsv"),
+                                      sep = '\t',
+                                      header = TRUE)
+
 ## Inference
 # All classes
 resnet_2022_12_12 <- read.table(file = file.path(getwd(), "data", "validation_inference", "2022-12-12_validation_image_predictions.tsv"),
@@ -44,6 +48,11 @@ centernet_2022_12_16 <- read.table(file = file.path(getwd(), "data", "validation
                                    sep = '\t',
                                    header = TRUE)
 
+
+# Just pollen classes (with second camera)
+centernet_2023_03_24 <- read.table(file = file.path(getwd(), "data", "validation_inference", "2023-03-24_centernet_val_only_pollen_predictions.tsv"),
+                                   sep = '\t',
+                                   header = TRUE)
 
 
 
@@ -151,6 +160,24 @@ rsq_centernet_2022_12_14 <- get_r_squared(ground_truth_2022_12_12, centernet_202
 rsq_centernet_2022_12_15 <- get_r_squared(ground_truth_2022_12_15, centernet_2022_12_15)
 rsq_centernet_2022_12_16 <- get_r_squared(ground_truth_2022_12_16, centernet_2022_12_16)
 
+# Try this with each camera subsetted
+rsq_centernet_2023_03_24 <- get_r_squared(ground_truth_2023_03_24, centernet_2023_03_24)
+
+# First camera
+ground_truth_2023_03_24_cam1 <- ground_truth_2023_03_24
+ground_truth_2023_03_24_cam1$date = as.Date(substr(ground_truth_2023_03_24_cam1$name, 1, 10), format="%Y-%m-%d")
+ground_truth_2023_03_24_cam1 <- ground_truth_2023_03_24_cam1 %>%
+  filter(date <= as.Date("2022-05-27")) %>%
+  select(-date)
+rsq_centernet_2023_03_24_cam1 <- get_r_squared(ground_truth_2023_03_24_cam1, centernet_2023_03_24[as.Date(centernet_2023_03_24$date) <= as.Date("2022-05-27"), ])
+
+# Second camera
+ground_truth_2023_03_24_cam2 <- ground_truth_2023_03_24
+ground_truth_2023_03_24_cam2$date = as.Date(substr(ground_truth_2023_03_24_cam2$name, 1, 10), format="%Y-%m-%d")
+ground_truth_2023_03_24_cam2 <- ground_truth_2023_03_24_cam2 %>%
+  filter(date > as.Date("2022-05-27")) %>%
+  select(-date)
+rsq_centernet_2023_03_24_cam2 <- get_r_squared(ground_truth_2023_03_24_cam2, centernet_2023_03_24[as.Date(centernet_2023_03_24$date) > as.Date("2022-05-27"), ])
 
 # Plotting r-squared values -----------------------------------------------
 plot_r_squared <- function(df, model_name) {
@@ -222,6 +249,10 @@ plot_r_squared(rsq_resnet_2022_12_12, "Faster RCNN Resnet 2022-12-12")
 plot_r_squared(rsq_centernet_2022_12_14, "CenterNet HourGlass only pollen 2022-12-14")
 plot_r_squared(rsq_centernet_2022_12_15, "CenterNet HourGlass all classes 2022-12-15")
 plot_r_squared(rsq_centernet_2022_12_16, "CenterNet HourGlass only tubes 2022-12-16")
+
+plot_r_squared(rsq_centernet_2023_03_24, "CenterNet both cameras 2023-03-24")
+plot_r_squared(rsq_centernet_2023_03_24_cam1, "CenterNet camera 1 2023-03-24")
+plot_r_squared(rsq_centernet_2023_03_24_cam2, "CenterNet camera 2 2023-03-24")
 
 
 # Plotting linear models --------------------------------------------------
