@@ -13,14 +13,13 @@ library(ggnewscale)
 library(googlesheets4)
 
 # Adding my Google service account credentials
-gs4_auth(path = "~/.credentials/google_sheets_api/service_account.json")
+# gs4_auth(path = "~/.credentials/google_sheets_api/service_account.json")
 
 # Importing the data ------------------------------------------------------
 # Using Arrow to import the data as an Arrow Table. 
 inference <- read_delim_arrow(file = file.path(getwd(), 
                                                "data", 
-                                               "full_inference", 
-                                               "inference_2022-12-26.tsv"),
+                                               "2023-07-13_Calvin_all_tracks.txt"),
                               delim = '\t',
                               col_names = TRUE,
                               as_data_frame = FALSE)
@@ -31,10 +30,10 @@ inference$score <- as.double(inference$score)
 
 # None of the images are named after their accession, just the wells. The
 # required information to link well to accession can be found in this sheet:
-wells_to_accessions <- read_sheet("1yQ5yAKiL6BzwZ-wH-Q44RoUEwMZztTYafzdvVylq6fo")
+wells_to_accessions <- read_sheet("193VJf4eJNUMQZGTL2FtOpLGVIceUZKzQJheDtrPrWjg")
 
 # Only keeping the columns we need
-wells_to_accessions <- wells_to_accessions[ , c("date", "run", "well", "temp_target", "accession")]
+wells_to_accessions <- wells_to_accessions[ , c("date", "run", "well", "temp_target", "chronic_temp", "accession", "germ_day")]
 wells_to_accessions$date <- as.character(wells_to_accessions$date)
 
 
@@ -84,11 +83,18 @@ process_data <- function(df,
 }
 
 processed_inference <- process_data(inference, 
-                                    0.39, # germinated_cutoff
-                                    0.47, # ungerminated_cutoff 
-                                    0.59, # burst_cutoff
-                                    0.2, # unknown_germinated_cutoff
-                                    0.45) # aborted_cutoff
+                                    0.35, # germinated_cutoff
+                                    0.23, # ungerminated_cutoff 
+                                    0.16, # burst_cutoff
+                                    0.34, # unknown_germinated_cutoff
+                                    0.29) # aborted_cutoff
+
+#subset_dict_camera_two = {"aborted": 0.29,
+  #"ungerminated": 0.23,
+  #"germinated": 0.35,
+ # "burst": 0.16,
+  #"tube_tip": 0.3,
+  #"unknown_germinated": 0.34}
 
 # Adding back in the accession and temp metadata
 processed_inference <- left_join(processed_inference, wells_to_accessions, by = c("date", "run", "well"))
@@ -101,7 +107,7 @@ processed_inference <- left_join(processed_inference, wells_to_accessions, by = 
 # I'll try just taking the averages across accessions first, just to have a 
 # chance of even getting everything on the plot.
 simplified_df <- processed_inference %>%
-  group_by(accession, temp_target, time, class) %>%
+  group_by(accession, temp_target, time, class, chronic_temp, germ_day) %>%
   summarize(mean_percentage = mean(percentage))
 
 
@@ -347,6 +353,12 @@ make_plot_nappn <- function(input_df, image_name) {
                                  units = 'in')
 }
 
+make_plot(simplified_df[simplified_df$chronic_temp == 24, ], "All inference at 24 ºC")
+make_plot(simplified_df[simplified_df$chronic_temp == 34, ], "All inference at 34 ºC")
+
+make_plot_with_lines(simplified_df[simplified_df$chronic_temp == 24, ], "All inference at 24 ºC")
+make_plot_with_lines(simplified_df[simplified_df$chronic_temp == 34, ], "All inference at 34 ºC")
+
 make_plot(simplified_df[simplified_df$temp_target == 26, ], "All inference at 26 ºC")
 make_plot(simplified_df[simplified_df$temp_target == 34, ], "All inference at 34 ºC")
 
@@ -402,9 +414,9 @@ make_plot_with_highlight <- function(input_df, image_name, accession_id) {
                        limits = force) +
     scale_linetype_manual(values = rep.int(1, 191), guide = "none") +
     geom_line(data = input_df[input_df$accession == {{accession_id}}, ], linetype = '41', linewidth = 2) +
-    scale_x_continuous(breaks = c(0, 20, 40, 60, 80),
-                       labels = c(15, 45, 75, 105, 135),
-                       limits = c(0, 82),
+    scale_x_continuous(breaks = c(0, 20, 40, 60),
+                       labels = c(15, 45, 75, 105),
+                       limits = c(0, 65),
                        expand = c(0, 0)) +
     scale_y_continuous(breaks = c(0, 0.25, .5, .75, 1),
                        labels = c("0%", "25%", "50%", "75%", "100%"),
@@ -437,6 +449,12 @@ make_plot_with_highlight <- function(input_df, image_name, accession_id) {
          dpi = 400,
          units = 'in')
 }
+
+make_plot_with_highlight(simplified_df[simplified_df$chronic_temp == 24, ], "Heinz at 24 °C", "heinz")
+make_plot_with_highlight(simplified_df[simplified_df$chronic_temp == 34, ], "Heinz at 34 °C", "heinz")
+
+make_plot_with_highlight(simplified_df[simplified_df$chronic_temp == 24, ], "Tamaulipas at 24 °C", "tam")
+make_plot_with_highlight(simplified_df[simplified_df$chronic_temp == 34, ], "Tamaulipas at 34 °C", "tam")
 
 make_plot_with_highlight(simplified_df[simplified_df$temp_target == 26, ], "Heinz at 26 °C", "CW0000")
 make_plot_with_highlight(simplified_df[simplified_df$temp_target == 34, ], "Heinz at 34 °C", "CW0000")
@@ -586,3 +604,110 @@ tamaulipas_info <- wells_to_accessions[wells_to_accessions$accession == "CW0002"
 CW0164_info <- wells_to_accessions[wells_to_accessions$accession == "CW0164", ]
 
 CW0079_info <- wells_to_accessions[wells_to_accessions$accession == "CW0079", ]
+
+# -----------------------------------------------------------------------------------------
+
+# Making plots for specific accessions on a specific day of the chronic hs experiment
+
+make_plot_with_one_germ_day <- function(input_df, image_name, accession_id) {
+  color_vec <- c("#FF00FF", # burst
+                 # "#5fc77b", # germinated
+                 "#11e00d", # germinated
+                 # "#2F69FF", # ungerminated
+                 "#1b74fa", # ungerminated
+                 "#FFB000", # unknown_germinated
+                 "#787878", # aborted
+                 "#ffa6db", # tube_tip_burst
+                 "#fffa70", # tube_tip_bulging
+                 "#a8ffe1") # tube_tip
+  names(color_vec) <- c("burst", 
+                        "germinated", 
+                        "ungerminated", 
+                        "unknown_germinated", 
+                        "aborted", 
+                        "tube_tip_burst",
+                        "tube_tip_bulging",
+                        "tube_tip")
+  
+  input_df <- input_df[input_df$accession == accession_id, ]
+  
+  ggplot(input_df, aes(x = time, y = mean_percentage, color = class)) +
+    geom_line(linewidth = 2) +
+    scale_color_manual(values = color_vec,
+                       name = "Class",
+                       breaks = c("ungerminated", 
+                                  "germinated", 
+                                  "burst", 
+                                  "aborted", 
+                                  "unknown_germinated", 
+                                  "tube_tip", 
+                                  "tube_tip_burst", 
+                                  "tube_tip_bulging"),
+                       labels = c("Ungerminated", 
+                                  "Germinated", 
+                                  "Burst", 
+                                  "Aborted", 
+                                  "Unknown germinated", 
+                                  "Tube tip", 
+                                  "Tube tip burst", 
+                                  "Tube tip bulging"),
+                       limits = force) +
+    scale_x_continuous(breaks = c(0, 20, 40, 60),
+                       labels = c(15, 45, 75, 105),
+                       limits = c(0, 62),
+                       expand = c(0, 0)) +
+    scale_y_continuous(breaks = c(0, 0.25, .5, .75, 1),
+                       labels = c("0%", "25%", "50%", "75%", "100%"),
+                       limits = c(0, 1),
+                       expand = c(0, 0)) +
+    labs(title = image_name,
+         x = "Time (minutes)",
+         y = "Class percentage") +
+    theme_bw() +
+    theme(axis.title = element_text(size = 26, face = 'bold'),
+          axis.text = element_text(size = 22, face = 'bold', color = 'black'),
+          axis.text.x = element_text(size = 26, face = 'bold', color = 'black'),
+          plot.title = element_text(size = 28, face = 'bold', margin = margin(0, 0, 10, 0)),
+          panel.border = element_blank(),
+          axis.line = element_line(linewidth = 1, color = 'black'),
+          axis.ticks = element_line(linewidth = 1, color = 'black'),
+          axis.ticks.length = unit(8, 'pt'),
+          plot.margin = margin(0.5, 0.5, 0.5, 0.5, 'cm'),
+          panel.grid = element_blank(),
+          legend.position = 'right',
+          legend.title = element_text(size = 18, face = 'bold', color = 'black'),
+          legend.text = element_text(size = 14, face = 'bold', color = 'black'),
+          strip.background = element_blank(),
+          strip.placement = "outside")
+  
+  ggsave(filename = file.path(getwd(), "plots", "all_inference_plots", paste0(image_name, "_only.png")),
+         device = 'png',
+         width = 14,
+         height = 8,
+         dpi = 400,
+         units = 'in')
+}
+
+# Daily plots for heinz 24C
+make_plot_with_one_germ_day(subset(simplified_df, chronic_temp == 24 & germ_day == 1), "Heinz at 24 °C, day 1", "heinz")
+make_plot_with_one_germ_day(subset(simplified_df, chronic_temp == 24 & germ_day == 2), "Heinz at 24 °C, day 2", "heinz")
+make_plot_with_one_germ_day(subset(simplified_df, chronic_temp == 24 & germ_day == 3), "Heinz at 24 °C, day 3", "heinz")
+make_plot_with_one_germ_day(subset(simplified_df, chronic_temp == 24 & germ_day == 4), "Heinz at 24 °C, day 4", "heinz")
+
+#Daily plots for tam 24C
+make_plot_with_one_germ_day(subset(simplified_df, chronic_temp == 24 & germ_day == 1), "Tamaulipas at 24 °C, day 1", "tam")
+make_plot_with_one_germ_day(subset(simplified_df, chronic_temp == 24 & germ_day == 2), "Tamaulipas at 24 °C, day 2", "tam")
+make_plot_with_one_germ_day(subset(simplified_df, chronic_temp == 24 & germ_day == 3), "Tamaulipas at 24 °C, day 3", "tam")
+make_plot_with_one_germ_day(subset(simplified_df, chronic_temp == 24 & germ_day == 4), "Tamaulipas at 24 °C, day 4", "tam")
+
+# Daily plots for heinz 34C
+make_plot_with_one_germ_day(subset(simplified_df, chronic_temp == 34 & germ_day == 1), "Heinz at 34 °C, day 1", "heinz")
+make_plot_with_one_germ_day(subset(simplified_df, chronic_temp == 34 & germ_day == 2), "Heinz at 34 °C, day 2", "heinz")
+make_plot_with_one_germ_day(subset(simplified_df, chronic_temp == 34 & germ_day == 3), "Heinz at 34 °C, day 3", "heinz")
+make_plot_with_one_germ_day(subset(simplified_df, chronic_temp == 34 & germ_day == 4), "Heinz at 34 °C, day 4", "heinz")
+
+#Daily plots for tam 34C
+make_plot_with_one_germ_day(subset(simplified_df, chronic_temp == 34 & germ_day == 1), "Tamaulipas at 34 °C, day 1", "tam")
+make_plot_with_one_germ_day(subset(simplified_df, chronic_temp == 34 & germ_day == 2), "Tamaulipas at 34 °C, day 2", "tam")
+make_plot_with_one_germ_day(subset(simplified_df, chronic_temp == 34 & germ_day == 3), "Tamaulipas at 34 °C, day 3", "tam")
+make_plot_with_one_germ_day(subset(simplified_df, chronic_temp == 34 & germ_day == 4), "Tamaulipas at 34 °C, day 4", "tam")
